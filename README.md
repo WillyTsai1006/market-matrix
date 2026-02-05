@@ -31,7 +31,7 @@ This project demonstrates the intersection of **Quantitative Finance**, **Real-t
 * **Trade Particle Rain:** Visualizes individual trade execution.
     * **Green Rain:** Buy orders.
     * **Red Rain:** Sell orders.
-    * **Physics:** Particles fall from the "sky" at positions relative to the current price.
+    * **Physics:** Particles fall from the "sky".
 
 ### 🟡 UX & Interaction
 * **Multi-Asset Switcher:** Seamlessly switch between BTC, ETH, SOL, and DOGE. Implements proper **WebSocket lifecycle management** (auto-unsubscribe/subscribe) to prevent memory leaks.
@@ -88,7 +88,7 @@ Installation
 
 1. Clone the repo
 ```Bash
-git clone [https://github.com/WillyTsai1006/market-matrix.git](https://github.com/WillyTsai1006/market-matrix.git)
+git clone https://github.com/WillyTsai1006/market-matrix.git
 cd market-matrix
 ```
 2. Install dependencies
