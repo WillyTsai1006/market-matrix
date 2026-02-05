@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react' // 記得補上 useRef
 import SymbolSelector from './SymbolSelector'
-import { Canvas, useFrame } from '@react-three/fiber'    // 這裡補上了 useFrame
+import { Canvas, useThree, useFrame } from '@react-three/fiber'    // 這裡補上了 useFrame
 import { OrbitControls, Stars, Text } from '@react-three/drei'
 import { EffectComposer, Bloom } from '@react-three/postprocessing'
 import * as THREE from 'three' // 這裡補上了 THREE (為了用 lerp 運算)
@@ -167,7 +167,7 @@ export default function App() {
         <DepthWall type="bids" data={bids} onHover={setTooltipData} />
         <DepthWall type="asks" data={asks} onHover={setTooltipData} />
         <TradeRain ref={rainRef} symbol={symbol} />
-        <Text position={[0, 5, 0]} fontSize={1} color="white">
+        <Text position={[0, 10, 0]} fontSize={1} color="white">
           {symbol.toUpperCase()} Market Matrix
         </Text>
       </group>
@@ -178,38 +178,60 @@ export default function App() {
 }
 // --- 💡 新增：環境氛圍燈光組件 ---
 function MarketLights({ mood }) {
+  const { scene } = useThree(); // 取得 Three.js 的場景物件
   const ambientRef = useRef();
+  // 初始化霧氣 (如果場景還沒霧)
+  React.useEffect(() => {
+    // FogExp2(顏色, 濃度)
+    // 濃度 0.02 代表遠處會漸漸隱沒，製造深邃感
+    scene.fog = new THREE.FogExp2('#000000', 0.02);
+  }, [scene]);
   useFrame(() => {
+    // 1. 定義目標顏色 (背景色 & 霧氣色)
+    // 我們不要用太刺眼的亮紅亮綠，用「深色系」比較有質感
+    const targetColor = new THREE.Color();
+    const targetBg = new THREE.Color();
+    if (mood > 0.05) { 
+      // 🟢 牛市：深綠色氛圍
+      targetColor.set('#00ff41'); 
+      targetBg.set('#002200'); // 背景是很深的綠
+    } else if (mood < -0.05) {
+      // 🔴 熊市：深紅色氛圍
+      targetColor.set('#ff0055');
+      targetBg.set('#330011'); // 背景是很深的紅
+    } else {
+      // ⚪ 盤整：深灰色/黑色
+      targetColor.set('#222222');
+      targetBg.set('#050505'); // 回到接近純黑
+    }
+    // 2. 漸變更新環境光 (照亮物體)
     if (ambientRef.current) {
-      // 根據 mood 決定目標顏色
-      // mood > 0 (買方強) -> 綠色
-      // mood < 0 (賣方強) -> 紅色
-      // mood = 0 -> 藍色/白色 (中性)
-      const targetColor = new THREE.Color();
-      if (mood > 0.1) targetColor.set('#00ff41'); // Bullish Green
-      else if (mood < -0.1) targetColor.set('#ff0055'); // Bearish Red
-      else targetColor.set('#222222'); // Neutral Gray/Blue
-      // 使用 lerp 平滑過渡顏色 (才不會閃爍)
-      // 0.05 是變色速度，越小越慢
       ambientRef.current.color.lerp(targetColor, 0.05);
-      // 也可以根據強度改變亮度
-      // 絕對值越大，光越強 (範圍 0.2 ~ 0.8)
-      const targetIntensity = 0.2 + Math.abs(mood) * 0.6;
+      // 強度也會呼吸：情緒越激動，光越強
+      const targetIntensity = 0.5 + Math.abs(mood) * 1.0;
       ambientRef.current.intensity = THREE.MathUtils.lerp(
-        ambientRef.current.intensity, 
-        targetIntensity, 
+        ambientRef.current.intensity,
+        targetIntensity,
         0.05
       );
+    }
+    // 3. 漸變更新「背景」與「霧氣」 (這是讓氛圍明顯的關鍵！)
+    if (scene.background) {
+      scene.background.lerp(targetBg, 0.02); // 背景變色慢一點，比較優雅
+    } else {
+      scene.background = new THREE.Color('#050505'); // 初始化背景
+    }
+    if (scene.fog) {
+      scene.fog.color.lerp(targetBg, 0.02); // 霧氣顏色跟著背景變
     }
   });
   return (
     <group>
-      {/* 環境光：負責整體的基底顏色 */}
-      <ambientLight ref={ambientRef} intensity={0.3} />
-      {/* 點光源：保持場景立體感 (白色) */}
-      <pointLight position={[10, 20, 10]} intensity={1} color="white" />
-      {/* 底部補光：讓山脈底部有點神秘感 */}
-      <spotLight position={[0, -10, 0]} intensity={0.5} color="#00ffff" angle={1} />
+      <ambientLight ref={ambientRef} intensity={0.5} />
+      {/* 點光源保持白色，確保柱子的立體感 */}
+      <pointLight position={[10, 20, 10]} intensity={1.5} color="white" />
+      {/* 底部補光 */}
+      <spotLight position={[0, -10, 0]} intensity={1} color="#00ffff" angle={1} />
     </group>
   )
 }
