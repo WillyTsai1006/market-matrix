@@ -6,6 +6,7 @@ export function useBinanceDepth(symbol = 'btcusdt') {
   const [orderBook, setOrderBook] = useState({ bids: [], asks: [] });
   const ws = useRef(null);
   useEffect(() => {
+    setOrderBook({ bids: [], asks: [] });
     // 這次我們訂閱 @depth20，每 1000ms 更新一次，抓前 20 檔深度
     const url = `wss://stream.binance.com:9443/ws/${symbol}@depth20@1000ms`;
     ws.current = new WebSocket(url);
@@ -19,6 +20,7 @@ export function useBinanceDepth(symbol = 'btcusdt') {
       });
     };
     return () => {
+      console.log(`❌ [Depth] Disconnecting from ${symbol}...`);
       if (ws.current) ws.current.close();
     };
   }, [symbol]);

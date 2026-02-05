@@ -1,1 +1,7 @@
 body { margin: 0; padding: 0; overflow: hidden; }
+/* 強制覆蓋 Stats 的位置 */
+.stats {
+  left: auto !important; /* 取消左邊對齊 */
+  right: 0 !important;   /* 強制靠右 */
+  top: 0 !important;
+}

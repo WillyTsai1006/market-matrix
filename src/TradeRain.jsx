@@ -1,15 +1,20 @@
-import React, { useRef, useMemo, useEffect, forwardRef, useImperativeHandle } from 'react'
+import React, { useState, useRef, useMemo, useEffect, forwardRef, useImperativeHandle } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 
 const MAX_COUNT = 500; // 畫面上最多同時存在幾顆粒子
 // 使用 forwardRef 讓父組件可以呼叫這個組件裡的函式
 const TradeRain = forwardRef((props, ref) => {
+  const [drops, setDrops] = useState([]);
   const meshRef = useRef();
   const dummy = useMemo(() => new THREE.Object3D(), []); // 用來計算矩陣的臨時物件
   // --- 粒子資料結構 ---
   // 我們不用 useState，因為變動太快了，改用 useRef 來存純資料
-  const particles = useRef([]); 
+  const particles = useRef([]);
+  // --- 新增：當 props.symbol 改變時，清空所有粒子 ---
+  React.useEffect(() => {
+    setDrops([]); // 一鍵清空
+  }, [props.symbol]); // 監聽父層傳進來的 symbol 
   // 格式: [{ position: [x,y,z], velocity: y速度, color: THREE.Color, active: bool }]
   // 初始化粒子池
   useEffect(() => {
@@ -23,18 +28,16 @@ const TradeRain = forwardRef((props, ref) => {
   }, []);
   // --- 對外公開的函式：發射一顆粒子 ---
   useImperativeHandle(ref, () => ({
-    spawn: (price, isSell) => {
+    spawn: (price, quantity, isSell) => {
       // 1. 找到一個目前沒在用的粒子槽
       const availableIdx = particles.current.findIndex(p => !p.active);
       if (availableIdx === -1) return; // 池子滿了就忽略
       const p = particles.current[availableIdx];
       p.active = true;
       // 2. 計算發射位置
-      // 我們讓買單 (綠) 下在左邊 X: [-5, 0]
-      // 賣單 (紅) 下在右邊 X: [0, 5]
-      const randomOffset = Math.random() * 5; // 0 ~ 5 的隨機範圍
+      const randomOffset = Math.random() * 20; // 0 ~ 5 的隨機範圍
       const xPos = isSell ? (1 + randomOffset) : (-1 - randomOffset);
-      p.position = [xPos, 20, 0]; // 從 Y=20 高空落下
+      p.position = [xPos, 40, 0]; // 從 Y=20 高空落下
       p.velocity = Math.random() * 0.2 + 0.1; // 隨機下落速度
       // 3. 設定顏色 (買綠/賣紅)
       p.color.set(isSell ? '#ff0055' : '#00ff41');
